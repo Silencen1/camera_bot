@@ -1,0 +1,5 @@
+aiogram==2.25.2
+flask
+requests
+python-dotenv
+aiohttp==3.8.6
